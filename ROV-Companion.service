@@ -1,0 +1,47 @@
+[Unit]
+# Deskripsi service
+Description=ROV Companion Control
+
+# Menjalankan service setelah jaringan dinyatakan online
+After=network-online.target
+
+# Meminta systemd mengaktifkan target jaringan online
+Wants=network-online.target
+
+[Service]
+# Menandakan proses utama akan berjalan di background
+Type=forking
+
+# Menjalankan service menggunakan user ikantempe
+User=ikantempe
+
+# Direktori kerja saat service dijalankan
+WorkingDirectory=/home/ikantempe
+
+# Menentukan tipe terminal untuk tmux
+Environment=TERM=xterm-256color
+
+# Menambahkan direktori package Python dari virtual environment
+Environment="PYTHONPATH=/home/ikantempe/pienv/lib/python3.13/site-packages"
+
+# Menunggu perangkat Pixhawk terdeteksi pada /dev/ttyACM0
+# Pengecekan dilakukan setiap 1 detik sebelum program dijalankan
+ExecStartPre=/bin/sh -c 'until [ -e /dev/ttyACM0 ]; do sleep 1; done'
+
+# Menjalankan program kontrol ROV dalam sesi tmux bernama rov
+# Opsi -d membuat sesi tmux berjalan di background
+ExecStart=/usr/bin/tmux new-session -d -s rov /home/ikantempe/rov_control_baru
+
+# Menghentikan sesi tmux bernama rov ketika service dihentikan
+ExecStop=/usr/bin/tmux kill-session -t rov
+
+# Menjalankan ulang service apabila terjadi kegagalan
+Restart=on-failure
+
+# Memberikan jeda 3 detik sebelum mencoba restart
+RestartSec=3
+
+[Install]
+# Mengaktifkan service pada proses boot normal
+# ketika sistem mencapai target multi-user
+WantedBy=multi-user.target
